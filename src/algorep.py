@@ -205,7 +205,7 @@ def main():
     if rank == 0:
         REPL(comm, nb_servers, nb_clients)
 
-    if rank <= nb_servers:
+    elif rank <= nb_servers:
         server = Server(comm, nb_servers, nb_clients)
         server.run()
         '''
