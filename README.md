@@ -34,14 +34,7 @@ Pour lancer le script avec MPI, utilisez la commande suivante :
 make
 ```
 
-Cette commande lancera le script `algorep.py` en utilisant MPI avec le nombre de processus défini dans le Makefile.
-
-## Nettoyage
-Pour nettoyer les fichiers temporaires générés lors de l'exécution, exécutez :
-
-```shell
-make clean
-```
+Cette commande lancera le script `main.py` en utilisant MPI.
 
 ## Commandes REPL
 Nos commandes REPL ont la syntaxe suivantes :
@@ -60,4 +53,16 @@ START
 
 ```py
 LOG (server_id)
+```
+
+```py
+MOVE delta (client_id)
+```
+
+```py
+INSERT text (client_id)
+```
+
+```py
+DELETE delta (client_id)
 ```
