@@ -1,6 +1,6 @@
 # Algorep
 
-## Autheurs
+## Auteurs
 * Mathéo DUCROT
 * Adam ISMAILI
 * Matthias JACQUEMONT
@@ -54,16 +54,4 @@ START
 
 ```py
 LOG (server_id)
-```
-
-```py
-MOVE delta (client_id)
-```
-
-```py
-INSERT text (client_id)
-```
-
-```py
-DELETE delta (client_id)
 ```
