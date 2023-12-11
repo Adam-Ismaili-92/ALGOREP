@@ -12,7 +12,7 @@ def main() :
     os.chdir(script_dir)
     print("cd " + str(script_dir))
 
-    command = "mpiexec -n " + str(nb_servers + nb_clients + 1) + " python algorep.py " + str(nb_servers) + " " + str(nb_clients)
+    command = "mpiexec -n " + str(nb_servers + nb_clients + 1) + " python3 algorep.py " + str(nb_servers) + " " + str(nb_clients)
     print(command)
 
     os.system(command)
