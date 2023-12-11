@@ -55,3 +55,15 @@ START
 ```py
 LOG (server_id)
 ```
+
+```py
+MOVE delta (client_id)
+```
+
+```py
+INSERT text (client_id)
+```
+
+```py
+DELETE delta (client_id)
+```
