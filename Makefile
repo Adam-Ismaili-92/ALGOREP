@@ -19,8 +19,4 @@ run:
 install:
 	@pip install -r requirements.txt
 
-# Règle pour nettoyer les fichiers temporaires
-clean:
-	@echo "Nettoyage des fichiers temporaires (s'il y en a)"
-
-.PHONY: run install clean
+.PHONY: run install
