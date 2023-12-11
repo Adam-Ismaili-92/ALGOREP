@@ -13,7 +13,7 @@ all: run
 
 # Règle pour exécuter le script
 run:
-	@$(MPIEXEC) -n $(NPROCS) python $(SCRIPT)
+	@$(MPIEXEC) -n $(NPROCS) python $(SCRIPT) 2 2
 
 # Règle pour installer les dépendances Python
 install:
