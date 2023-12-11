@@ -4,7 +4,7 @@ import time
 
 host_server_id = 1
 
-REPL, REPL_RESPONSE, FOR_SERVER, FOR_CLIENT = 0, 1, 2, 3
+REPL, REPL_RESPONSE, FOR_SERVER, FOR_CLIENT, DELTA, UPDATE = 0, 1, 2, 3, 4, 5
 
 class Server:
     def __init__(self, comm, nb_servers, nb_clients):
@@ -15,6 +15,8 @@ class Server:
         self.log = []
         self.crash = False
         self.speed = 2 # FAST by default
+        self.file = ""
+        self.delta = 0
 
     def replicate_value_across_servers(self):
         # Simulate replicating the value to other servers
@@ -52,11 +54,44 @@ class Server:
     def notify_client(self, client_UID):
         # Simulate notifying the client about successful replication
         print(f"[SERVER] Server {self.id} notifies Client {client_UID}: Replication successful.")
+
+    def update_delta(self):
+        for sender_id in range(1, self.nb_servers + 1):
+            if sender_id != self.id:
+                self.comm.send(self.delta, dest=sender_id, tag=DELTA)
+
+    def update_file(self):
+        file_path = "my_file.txt"
+        with open(file_path, "w") as file:
+            file.write(self.file)
+        for sender_id in range(1, self.nb_servers + 1):
+            if sender_id != self.id:
+                self.comm.send(self.file, dest=sender_id, tag=UPDATE)
     
     def receive_REPL(self):
         value = self.comm.recv(source=0, tag=REPL).strip().split()
+        
+        if (value[0] == "MOVE"):
+            self.delta += int(value[1])
+            if (self.delta < 0):
+                self.delta = 0
+            self.update_delta()
+            self.comm.send(f"Here is the edited delta {self.delta}", dest=0, tag= REPL_RESPONSE)
+        if (value[0] == "INSERT"):
+            text = ""
+            for i in range(1,len(value)):
+                text = text + value[i] + " "
+            self.file = self.file[:self.delta] + text + self.file[self.delta:]
+            self.update_file()
+            self.comm.send(f"Here is the edited file {self.file}", dest=0, tag= REPL_RESPONSE)
+        if (value[0] == "DELETE"):
+            self.file = self.file[:self.delta] + self.file[self.delta + int(value[1]):]
+            self.update_file()
+            self.comm.send(f"Here is the edited file {self.file}", dest=0, tag= REPL_RESPONSE)
+
 
         if (value[0] == "SPEED"):
+            print("hello")
             if (value[1] == "LOW"):
                 self.speed = 0
             elif (value[1] == "MEDIUM"):
@@ -71,6 +106,15 @@ class Server:
 
         if (value[0] == "LOG"):
             self.comm.send(f"[SERVER] Server {self.id} LOG : \t{self.log}.", dest=0, tag=REPL_RESPONSE)
+
+    def handle_message(self):
+        value = self.comm.recv(source=0, tag=DELTA)
+        if (isistance(value, int)):
+            self.delta = value
+        value = self.comm.recv(source=0, tag=UPDATE).strip()
+        if (isistance(value, str)):
+            self.file = value
+        
 
     def run(self):
         # Initializing servers with clients UIDs
@@ -143,7 +187,28 @@ def REPL_function(comm, nb_servers, nb_clients):
             command = input("[REPL]: ").strip().split()
             if len(command) > 0:
                 com = command[0].upper()
-                if com == "CRASH":
+                if com == "MOVE":
+                    if len(command) <= 1:
+                        print("Need cursus movement")
+                    else:
+                        comm.send(f"MOVE {command[1]}", dest = host_server_id, tag = REPL)
+                        print(comm.recv(source=host_server_id, tag=REPL_RESPONSE))
+                elif com == "INSERT":
+                    if len(command) <= 1:
+                        print("Need text to insert")
+                    else:
+                        text = ""
+                        for i in range(1,len(command)):
+                            text = text + command[i] + " "
+                        comm.send(f"INSERT {text}", dest = host_server_id, tag = REPL)
+                        print(comm.recv(source=host_server_id, tag=REPL_RESPONSE))
+                elif com == "DELETE":
+                    if len(command) <= 1:
+                        print("Need number of characters to delete")
+                    else:
+                        comm.send(f"DELETE {command[1]}", dest = host_server_id, tag = REPL)
+                        print(comm.recv(source=host_server_id, tag=REPL_RESPONSE))
+                elif com == "CRASH":
                     if len(command) <= 1:
                         print("Please enter a server ID")
                     else:

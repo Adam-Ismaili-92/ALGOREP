@@ -5,8 +5,8 @@ def main() :
     Ask for the number of servers and clients, and lauch algorep.py
     '''
 
-    nb_clients = int(input("Number of clients : "))
-    nb_servers = int(input("Number of servers : "))
+    nb_clients = 2
+    nb_servers = 2
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
