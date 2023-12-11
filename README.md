@@ -1,15 +1,11 @@
 # Algorep
 
 ## Autheurs
-Matheo DUCROT
-
-Adam ISMAILI
-
-Matthias JACQUEMONT
-
-Justin JAECKER
-
-Louis RIBAULT
+* Mathéo DUCROT
+* Adam ISMAILI
+* Matthias JACQUEMONT
+* Justin JAECKER
+* Louis RIBAULT
 
 ## Description
 Le but de ce projet est de développer un système d'édition de texte collaboratif, similaire à des applications telles qu'Etherpad, Gobby ou Google Docs. L'objectif principal est de permettre à plusieurs utilisateurs de modifier un document de manière simultanée et cohérente.
@@ -28,20 +24,18 @@ make install
 ```
 
 ## Utilisation
-Pour lancer le script avec MPI, utilisez la commande suivante :
+Pour lancer le script, utilisez la commande suivante :
 
 ```shell
 make
 ```
 
-Cette commande lancera le script `algorep.py` en utilisant MPI avec le nombre de processus défini dans le Makefile.
+Cette commande installera les dependances et lancera le script `main.py` qui permettra de choisir le nombre de prcessus et de lancer le 
+script `algorep.py` en 
+utilisant MPI 
+avec le nombre de 
+processus choisis.
 
-## Nettoyage
-Pour nettoyer les fichiers temporaires générés lors de l'exécution, exécutez :
-
-```shell
-make clean
-```
 
 ## Commandes REPL
 Nos commandes REPL ont la syntaxe suivantes :
