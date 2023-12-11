@@ -7,13 +7,13 @@ NPROCS = 4
 MPIEXEC = mpiexec
 
 # Script Python à exécuter
-SCRIPT = algorep.py
+SCRIPT = src/main.py
 
 all: run
 
 # Règle pour exécuter le script
 run:
-	@$(MPIEXEC) -n $(NPROCS) python $(SCRIPT) 2 2
+	@python3 $(SCRIPT)
 
 # Règle pour installer les dépendances Python
 install:

@@ -1,8 +1,10 @@
-from mpi4py import MPI
 import sys
 import time
 
+from mpi4py import MPI
+
 host_server_id = 1
+
 
 class Server:
     def __init__(self, comm, nb_servers, nb_clients):
@@ -12,7 +14,7 @@ class Server:
         self.nb_clients = nb_clients
         self.log = []
         self.crash = False
-        self.speed = 2 # FAST by default
+        self.speed = 2  # FAST by default
 
     def replicate_value_across_servers(self):
         # Simulate replicating the value to other servers
@@ -50,7 +52,7 @@ class Server:
     def notify_client(self, client_UID):
         # Simulate notifying the client about successful replication
         print(f"[SERVER] Server {self.id} notifies Client {client_UID}: Replication successful.")
-    
+
     def receive_REPL(self):
         value = self.comm.recv(source=0).strip().split()
 
@@ -90,11 +92,6 @@ class Server:
                 else:
                     self.receive_value_from_server()
             '''
-            
-
-
-
-
 
 
 class Client:
@@ -102,26 +99,23 @@ class Client:
         self.comm = comm
         self.UID = comm.Get_rank()
         self.isStarted = False
-    
+
     def send_command(self, server_id, command, bypass=False):
         if (bypass or self.isStarted):
             self.comm.send(command, dest=server_id)
-    
+
     def receive_REPL(self):
         value = self.comm.recv(source=0).strip().split()
 
         if (value[0] == "START"):
             self.isStarted = True
             self.comm.send(f"[CLIENT] Client {self.UID} started.", dest=0)
-    
+
     def run(self):
         self.send_command(host_server_id, self.UID, bypass=True)
 
         while True:
             self.receive_REPL()
-                
-
-
 
 
 def string_to_positive_integer(s):
@@ -133,6 +127,7 @@ def string_to_positive_integer(s):
             return -1
     except ValueError:
         return -1
+
 
 def REPL(comm, nb_servers, nb_clients):
     while True:
@@ -185,11 +180,10 @@ def REPL(comm, nb_servers, nb_clients):
                         else:
                             comm.send("LOG", dest=server_id)
                             print(comm.recv(source=server_id))
-            
+
 
         except EOFError:
             break
-            
 
 
 def main():
@@ -205,16 +199,16 @@ def main():
     nb_clients = int(sys.argv[2])
 
     # Create Server instance for each process
-    if rank == 0: REPL(comm, nb_servers, nb_clients)
+    if rank == 0:
+        REPL(comm, nb_servers, nb_clients)
 
     elif rank > 0 and rank <= nb_servers:
         server = Server(comm, nb_servers, nb_clients)
         server.run()
-            
-    elif rank > nb_servers: # Client
+
+    elif rank > nb_servers:  # Client
         client = Client(comm)
         client.run()
-
 
 
 if __name__ == "__main__":
