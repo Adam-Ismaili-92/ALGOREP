@@ -1,10 +1,10 @@
+from mpi4py import MPI
 import sys
 import time
 
-from mpi4py import MPI
-
 host_server_id = 1
 
+REPL, REPL_RESPONSE, FOR_SERVER, FOR_CLIENT = 0, 1, 2, 3
 
 class Server:
     def __init__(self, comm, nb_servers, nb_clients):
@@ -14,27 +14,27 @@ class Server:
         self.nb_clients = nb_clients
         self.log = []
         self.crash = False
-        self.speed = 2  # FAST by default
+        self.speed = 2 # FAST by default
 
     def replicate_value_across_servers(self):
         # Simulate replicating the value to other servers
         for server_id in range(1, self.nb_servers + 1):
             if server_id != self.id:
                 print(f"[SERVER] Server {self.id} sending \"{self.log}\" to server {server_id}.")
-                self.comm.send(self.log, dest=server_id)
+                self.comm.send(self.log, dest=server_id, tag=FOR_SERVER)
                 time.sleep((2 - self.speed) * 1)
 
     def receive_value_from_server(self):
         # Simulate receiving a value from other servers
         for sender_id in range(1, self.nb_servers + 1):
             if sender_id != self.id:
-                value = self.comm.recv(source=sender_id)
+                value = self.comm.recv(source=sender_id, tag=FOR_SERVER)
                 self.log = value
                 print(f"[SERVER] Server {self.id} received \"{self.log}\" from server {sender_id}.")
 
     def receive_value_from_client(self, source):
         # Simulate receiving a value from a client
-        value = self.comm.recv(source=source)
+        value = self.comm.recv(source=source, tag=FOR_SERVER)
         self.log.append(value)
         print(f"[SERVER] Server {self.id} received \"{value}\" from client.")
 
@@ -42,7 +42,7 @@ class Server:
         self.replicate_value_across_servers()
         for sender_id in range(1, self.nb_servers + 1):
             if sender_id != self.id:
-                value = self.comm.recv(source=sender_id)
+                value = self.comm.recv(source=sender_id, tag=FOR_SERVER)
                 if (self.log != value):
                     print(f"[SERVER][ERROR] Server {self.id} has a different log ({self.log}) than server {sender_id} ({value}).")
                     return
@@ -52,9 +52,9 @@ class Server:
     def notify_client(self, client_UID):
         # Simulate notifying the client about successful replication
         print(f"[SERVER] Server {self.id} notifies Client {client_UID}: Replication successful.")
-
+    
     def receive_REPL(self):
-        value = self.comm.recv(source=0).strip().split()
+        value = self.comm.recv(source=0, tag=REPL).strip().split()
 
         if (value[0] == "SPEED"):
             if (value[1] == "LOW"):
@@ -63,14 +63,14 @@ class Server:
                 self.speed = 1
             elif (value[1] == "HIGH"):
                 self.speed = 2
-            self.comm.send(f"[SERVER] Server {self.id} is now {value[1]}.", dest=0)
+            self.comm.send(f"[SERVER] Server {self.id} is now {value[1]}.", dest=0, tag=REPL_RESPONSE)
 
         if (value[0] == "CRASH"):
             self.crash = True
-            self.comm.send(f"[SERVER] Server {self.id} crashed.", dest=0)
+            self.comm.send(f"[SERVER] Server {self.id} crashed.", dest=0, tag=REPL_RESPONSE)
 
         if (value[0] == "LOG"):
-            self.comm.send(f"[SERVER] Server {self.id} LOG : \t{self.log}.", dest=0)
+            self.comm.send(f"[SERVER] Server {self.id} LOG : \t{self.log}.", dest=0, tag=REPL_RESPONSE)
 
     def run(self):
         # Initializing servers with clients UIDs
@@ -83,6 +83,7 @@ class Server:
 
         while True:
             self.receive_REPL()
+
             '''
             if not self.crash:
                 if (self.id == host_server_id):
@@ -92,6 +93,11 @@ class Server:
                 else:
                     self.receive_value_from_server()
             '''
+            
+
+
+
+
 
 
 class Client:
@@ -99,23 +105,26 @@ class Client:
         self.comm = comm
         self.UID = comm.Get_rank()
         self.isStarted = False
-
+    
     def send_command(self, server_id, command, bypass=False):
         if (bypass or self.isStarted):
-            self.comm.send(command, dest=server_id)
-
+            self.comm.send(command, dest=server_id, tag=FOR_SERVER)
+    
     def receive_REPL(self):
-        value = self.comm.recv(source=0).strip().split()
+        value = self.comm.recv(source=0, tag=REPL).strip().split()
 
         if (value[0] == "START"):
             self.isStarted = True
-            self.comm.send(f"[CLIENT] Client {self.UID} started.", dest=0)
-
+            self.comm.send(f"[CLIENT] Client {self.UID} started.", dest=0, tag=REPL_RESPONSE)
+    
     def run(self):
         self.send_command(host_server_id, self.UID, bypass=True)
 
         while True:
             self.receive_REPL()
+                
+
+
 
 
 def string_to_positive_integer(s):
@@ -128,8 +137,7 @@ def string_to_positive_integer(s):
     except ValueError:
         return -1
 
-
-def REPL(comm, nb_servers, nb_clients):
+def REPL_function(comm, nb_servers, nb_clients):
     while True:
         try:
             command = input("[REPL]: ").strip().split()
@@ -143,8 +151,8 @@ def REPL(comm, nb_servers, nb_clients):
                         if server_id < 1 or server_id > nb_servers:
                             print("Please enter a valid server ID")
                         else:
-                            comm.send("CRASH", dest=server_id)
-                            print(comm.recv(source=server_id))
+                            comm.send("CRASH", dest=server_id, tag=REPL)
+                            print(comm.recv(source=server_id, tag=REPL_RESPONSE))
                 elif com == "SPEED":
                     if len(command) <= 2:
                         print("Please enter a speed value and a server ID")
@@ -155,35 +163,36 @@ def REPL(comm, nb_servers, nb_clients):
                             print("Please enter a valid server ID")
                             continue
                         if speed == "LOW":
-                            comm.send("SPEED LOW", dest=server_id)
-                            print(comm.recv(source=server_id))
+                            comm.send("SPEED LOW", dest=server_id, tag=REPL)
+                            print(comm.recv(source=server_id, tag=REPL_RESPONSE))
                         elif speed == "MEDIUM":
-                            comm.send("SPEED MEDIUM", dest=server_id)
-                            print(comm.recv(source=server_id))
+                            comm.send("SPEED MEDIUM", dest=server_id, tag=REPL)
+                            print(comm.recv(source=server_id, tag=REPL_RESPONSE))
                         elif speed == "HIGH":
-                            comm.send("SPEED HIGH", dest=server_id)
-                            print(comm.recv(source=server_id))
+                            comm.send("SPEED HIGH", dest=server_id, tag=REPL)
+                            print(comm.recv(source=server_id, tag=REPL_RESPONSE))
                         else:
                             print("Please enter a valid speed value")
                 elif com == "START":
                     for process_id in range(nb_servers + 1, nb_servers + 1 + nb_clients):
-                        comm.send("START", dest=process_id)
-                        print(comm.recv(source=process_id))
+                        comm.send("START", dest=process_id, tag=REPL)
+                        print(comm.recv(source=process_id, tag=REPL_RESPONSE))
                 elif com == "LOG":
                     if len(command) < 2:
-                        comm.send("LOG", dest=host_server_id)
-                        print(comm.recv(source=host_server_id))
+                        comm.send("LOG", dest=host_server_id, tag=REPL)
+                        print(comm.recv(source=host_server_id, tag=REPL_RESPONSE))
                     else:
                         server_id = string_to_positive_integer(command[1])
                         if server_id < 1 or server_id > nb_servers:
                             print("Please enter a valid server ID")
                         else:
-                            comm.send("LOG", dest=server_id)
-                            print(comm.recv(source=server_id))
-
+                            comm.send("LOG", dest=server_id, tag=REPL)
+                            print(comm.recv(source=server_id, tag=REPL_RESPONSE))
+            
 
         except EOFError:
             break
+            
 
 
 def main():
@@ -200,15 +209,16 @@ def main():
 
     # Create Server instance for each process
     if rank == 0:
-        REPL(comm, nb_servers, nb_clients)
+        REPL_function(comm, nb_servers, nb_clients)
 
     elif rank > 0 and rank <= nb_servers:
         server = Server(comm, nb_servers, nb_clients)
         server.run()
-
-    elif rank > nb_servers:  # Client
+            
+    elif rank > nb_servers: # Client
         client = Client(comm)
         client.run()
+
 
 
 if __name__ == "__main__":
