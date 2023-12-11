@@ -1,15 +1,9 @@
 # Makefile pour exécuter algorep.py avec MPI
 
-# Nombre de processus à utiliser
-NPROCS = 4
-
-# Commande MPI
-MPIEXEC = mpiexec
-
 # Script Python à exécuter
 SCRIPT = src/main.py
 
-all: run
+all: install run
 
 # Règle pour exécuter le script
 run:
