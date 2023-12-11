@@ -71,23 +71,26 @@ class Server:
             self.comm.send(f"[SERVER] Server {self.id} LOG : \t{self.log}.", dest=0)
 
     def run(self):
-        '''
+        # Initializing servers with clients UIDs
         if (self.id == host_server_id):
             for i in range(self.nb_servers + 1, self.nb_servers + 1 + self.nb_clients):
                 self.receive_value_from_client(i)
             self.replicate_value_across_servers()
         else:
             self.receive_value_from_server()
-        # self.check_logs()
-        '''
 
         while True:
             self.receive_REPL()
             '''
             if not self.crash:
-                self.receive_value_from_client()
-                self.replicate_value_across_servers()
+                if (self.id == host_server_id):
+                    for i in range(self.nb_servers + 1, self.nb_servers + 1 + self.nb_clients):
+                        self.receive_value_from_client(i)
+                    self.replicate_value_across_servers()
+                else:
+                    self.receive_value_from_server()
             '''
+            
 
 
 
@@ -100,8 +103,8 @@ class Client:
         self.UID = comm.Get_rank()
         self.isStarted = False
     
-    def send_command(self, server_id, command):
-        if (self.isStarted):
+    def send_command(self, server_id, command, bypass=False):
+        if (bypass or self.isStarted):
             self.comm.send(command, dest=server_id)
     
     def receive_REPL(self):
@@ -112,7 +115,7 @@ class Client:
             self.comm.send(f"[CLIENT] Client {self.UID} started.", dest=0)
     
     def run(self):
-        self.send_command(host_server_id, self.UID)
+        self.send_command(host_server_id, self.UID, bypass=True)
 
         while True:
             self.receive_REPL()
@@ -202,28 +205,15 @@ def main():
     nb_clients = int(sys.argv[2])
 
     # Create Server instance for each process
-    if rank == 0:
-        REPL(comm, nb_servers, nb_clients)
+    if rank == 0: REPL(comm, nb_servers, nb_clients)
 
-    elif rank <= nb_servers:
+    elif rank > 0 and rank <= nb_servers:
         server = Server(comm, nb_servers, nb_clients)
         server.run()
-        '''
-        # Initializing servers with clients UIDs
-        if (rank == 0):
-            for _ in range(1, nb_clients + 1):
-                server.receive_value_from_client()
-            server.replicate_value_across_servers()
-        else:
-            server.receive_value_from_server()
-        server.check_logs()
-        '''
             
-    else: # Client
+    elif rank > nb_servers: # Client
         client = Client(comm)
         client.run()
-
-        # client.send_command(1, client.UID)
 
 
 
